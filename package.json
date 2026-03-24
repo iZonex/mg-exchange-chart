@@ -1,6 +1,6 @@
 {
   "name": "@mg-exchange/charts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Professional financial charting library for cryptocurrency exchanges. Canvas 2D + WebGL rendering, 21 indicators, 47 drawing tools, Smart Money Concepts, real-time streaming.",
   "main": "dist/index.cjs",
@@ -8,19 +8,19 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     },
     "./react": {
+      "types": "./dist/react/index.d.ts",
       "import": "./dist/react.js",
-      "require": "./dist/react.cjs",
-      "types": "./dist/react.d.ts"
+      "require": "./dist/react.cjs"
     },
     "./locales": {
+      "types": "./dist/locales/index.d.ts",
       "import": "./dist/locales.js",
-      "require": "./dist/locales.cjs",
-      "types": "./dist/locales.d.ts"
+      "require": "./dist/locales.cjs"
     }
   },
   "files": [
@@ -29,7 +29,7 @@
   ],
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && tsc --emitDeclarationOnly",
+    "build": "tsc --emitDeclarationOnly && vite build",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
