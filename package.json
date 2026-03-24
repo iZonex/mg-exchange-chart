@@ -55,6 +55,9 @@
     "smart-money",
     "drawing-tools"
   ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "author": "Exchange Charts Contributors",
   "homepage": "https://github.com/exchange-charts/exchange-charts",
   "repository": {
