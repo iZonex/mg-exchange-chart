@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exchange Charts</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0b0e11;
+      --panel: #1e2329;
+      --panel-hover: #2b3139;
+      --border: rgba(255,255,255,0.06);
+      --text: #eaecef;
+      --text2: #b7bdc6;
+      --text3: #5e6673;
+      --accent: #2962FF;
+      --bull: #0ecb81;
+      --bear: #f6465d;
+    }
+    [data-theme="light"] {
+      --bg: #ffffff;
+      --panel: #f0f1f3;
+      --panel-hover: #e6e8ea;
+      --border: rgba(0,0,0,0.08);
+      --text: #1e2329;
+      --text2: #474d57;
+      --text3: #848e9c;
+    }
+
+    body { background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); font-size: 12px; }
+    #app { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
+
+    /* ── Top Bar ─────────────────────────────────────── */
+    #topbar {
+      display: flex; align-items: center; gap: 0; padding: 0 4px;
+      background: var(--panel); border-bottom: 1px solid var(--border);
+      height: 36px; flex-shrink: 0; overflow: visible;
+    }
+    .tb-group { display: flex; align-items: center; height: 100%; }
+    .tb-sep { width: 1px; height: 16px; background: var(--border); margin: 0 4px; flex-shrink: 0; }
+    .tb { background: none; border: none; color: var(--text2); font-size: 12px; padding: 0 8px; height: 100%; cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent; transition: all .12s; }
+    .tb:hover { color: var(--text); background: var(--panel-hover); }
+    .tb.active { color: var(--text); border-bottom-color: var(--accent); }
+    .tb.accent { color: var(--accent); }
+    .tb.danger { color: var(--bear); }
+    .tb-symbol { font-weight: 600; font-size: 13px; }
+
+    /* ── Dropdown ─────────────────────────────────────── */
+    .dropdown { position: relative; }
+    .dropdown-menu {
+      display: none; position: absolute; top: 100%; left: 0; z-index: 200;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+      padding: 6px 0; min-width: 180px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      max-height: 400px; overflow-y: auto;
+    }
+    .dropdown.open .dropdown-menu { display: block; }
+    .dd-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 14px; cursor: pointer; color: var(--text2); transition: all .1s;
+    }
+    .dd-item:hover { background: var(--panel-hover); color: var(--text); }
+    .dd-item.active { color: var(--accent); }
+    .dd-item .check { width: 16px; text-align: center; }
+    .dd-head { padding: 4px 14px; font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
+
+    /* ── Left Drawing Bar ────────────────────────────── */
+    #draw-bar {
+      display: flex; flex-direction: column; gap: 0; padding: 4px 0;
+      background: var(--panel); border-right: 1px solid var(--border);
+      width: 40px; flex-shrink: 0; align-items: center;
+      overflow: visible; position: relative; z-index: 100;
+    }
+    .db {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--text3); border-radius: 4px; cursor: pointer; transition: all .12s;
+      flex-shrink: 0; position: relative;
+    }
+    .db:hover { background: var(--panel-hover); color: var(--text); }
+    .db.active { color: var(--accent); background: rgba(41,98,255,0.12); }
+    .db svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .db.danger { color: var(--bear); }
+    .db.stay-active { color: var(--accent); background: rgba(41,98,255,0.12); }
+
+    /* ── Tool Groups ──────────────────────────────────── */
+    .tool-group { width: 100%; position: relative; }
+    .tool-group-btn {
+      width: 32px; height: 32px; margin: 0 auto; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--text3); border-radius: 4px; cursor: pointer;
+      transition: all .12s; position: relative;
+    }
+    .tool-group-btn:hover { background: var(--panel-hover); color: var(--text); }
+    .tool-group-btn.active { color: var(--accent); background: rgba(41,98,255,0.12); }
+    .tool-group-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .tool-group-btn::after {
+      content: ''; position: absolute; right: 2px; bottom: 2px;
+      width: 0; height: 0; border-left: 3px solid transparent;
+      border-top: 3px solid var(--text3);
+    }
+    .tool-group-btn.active::after { border-top-color: var(--accent); }
+
+    .tool-flyout {
+      display: none; position: fixed; z-index: 300;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+      padding: 6px; min-width: 175px; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      white-space: nowrap;
+    }
+    .tool-group.open .tool-flyout { display: block; }
+    .tool-flyout-head {
+      padding: 2px 8px 4px; font-size: 9px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .tool-flyout-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 8px; cursor: pointer; color: var(--text2); border-radius: 4px;
+      transition: all .1s; font-size: 12px;
+    }
+    .tool-flyout-item:hover { background: var(--panel-hover); color: var(--text); }
+    .tool-flyout-item.active { color: var(--accent); }
+    .tool-flyout-item svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .db-sep { width: 24px; height: 1px; background: var(--border); margin: 3px auto; flex-shrink: 0; }
+
+    /* ── Mode Toggle ──────────────────────────────────── */
+    .mode-btn.active { background: var(--accent) !important; color: #fff !important; }
+
+    /* ── Indicator Gallery ─────────────────────────────── */
+    .ind-group-head {
+      padding: 8px 8px 4px; font-size: 10px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: .5px; font-weight: 600;
+    }
+    .ind-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 10px; cursor: pointer; border-radius: 6px;
+      transition: all .1s;
+    }
+    .ind-item:hover { background: var(--panel-hover); }
+    .ind-item.active { background: rgba(41,98,255,0.12); }
+    .ind-item .ind-name { font-size: 13px; color: var(--text); font-weight: 500; }
+    .ind-item .ind-desc { font-size: 11px; color: var(--text3); }
+    .ind-item .ind-star {
+      margin-left: auto; color: var(--text3); cursor: pointer;
+      font-size: 14px; transition: color .12s; flex-shrink: 0;
+    }
+    .ind-item .ind-star:hover, .ind-item .ind-star.fav { color: #f0b90b; }
+
+    /* ── Drawing Floating Toolbar ─────────────────────── */
+    .dtb-btn { transition: all .12s; }
+    .dtb-btn:hover { background: var(--panel-hover) !important; color: var(--text) !important; }
+
+    /* ── Tooltips ──────────────────────────────────────── */
+    .tool-group-btn[title]:hover::before,
+    .db[title]:hover::before {
+      content: attr(title);
+      position: absolute; left: calc(100% + 6px); top: 50%; transform: translateY(-50%);
+      background: #000; color: #fff; padding: 4px 8px; border-radius: 4px;
+      font-size: 11px; white-space: nowrap; z-index: 400;
+      pointer-events: none; opacity: 0.9;
+    }
+    /* Hide native tooltip when flyout is open */
+    .tool-group.open .tool-group-btn[title]::before { display: none; }
+
+
+    /* ── Navigation Buttons ─────────────────────────────── */
+    .nav-btn {
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--text3); cursor: pointer;
+      border-radius: 4px; transition: all .12s;
+    }
+    .nav-btn:hover { background: var(--panel-hover); color: var(--text); }
+
+    /* ── Main ─────────────────────────────────────────── */
+    #main { display: flex; flex: 1; min-height: 0; }
+    #chart { flex: 1; position: relative; min-width: 0; }
+
+    /* ── Status ───────────────────────────────────────── */
+    #status {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 2px 10px; background: var(--panel); border-top: 1px solid var(--border);
+      font-size: 11px; color: var(--text3); height: 22px; flex-shrink: 0;
+    }
+    #status kbd { color: var(--text2); font-family: inherit; }
+
+    /* ── Order Popup ──────────────────────────────────── */
+    #order-popup {
+      display: none; position: fixed; z-index: 510;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px; width: 280px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    }
+    #order-popup .op-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+    }
+    #order-popup .op-header h4 { font-size: 13px; font-weight: 600; margin: 0; }
+    #order-popup .op-close {
+      background: none; border: none; color: var(--text3); cursor: pointer; font-size: 18px; line-height: 1;
+    }
+    #order-popup .op-sides {
+      display: flex; gap: 0; border-radius: 6px; overflow: hidden; margin-bottom: 12px;
+      border: 1px solid var(--border);
+    }
+    #order-popup .op-side {
+      flex: 1; padding: 7px 0; text-align: center; font-size: 12px; font-weight: 600;
+      cursor: pointer; background: none; border: none; color: var(--text3); transition: all .12s;
+    }
+    #order-popup .op-side.buy.active { background: var(--bull); color: #fff; }
+    #order-popup .op-side.sell.active { background: var(--bear); color: #fff; }
+    #order-popup .op-side:not(.active):hover { background: var(--panel-hover); color: var(--text); }
+    #order-popup .op-types {
+      display: flex; gap: 0; margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    #order-popup .op-type {
+      flex: 1; padding: 6px 0; text-align: center; font-size: 11px; font-weight: 500;
+      cursor: pointer; background: none; border: none; color: var(--text3);
+      border-bottom: 2px solid transparent; transition: all .12s;
+    }
+    #order-popup .op-type.active { color: var(--text); border-bottom-color: var(--accent); }
+    #order-popup .op-field {
+      margin-bottom: 8px;
+    }
+    #order-popup .op-field label {
+      display: block; font-size: 10px; color: var(--text3); margin-bottom: 3px;
+      text-transform: uppercase; letter-spacing: .3px;
+    }
+    #order-popup .op-field input {
+      width: 100%; padding: 7px 10px; background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 5px; font-size: 13px; outline: none;
+      transition: border-color .12s;
+    }
+    #order-popup .op-field input:focus { border-color: var(--accent); }
+    #order-popup .op-field input:disabled { opacity: 0.4; cursor: not-allowed; }
+    #order-popup .op-row { display: flex; gap: 8px; }
+    #order-popup .op-row .op-field { flex: 1; }
+    #order-popup .op-submit {
+      width: 100%; padding: 9px; border: none; border-radius: 6px; font-size: 13px;
+      font-weight: 600; cursor: pointer; color: #fff; margin-top: 4px; transition: filter .12s;
+    }
+    #order-popup .op-submit:hover { filter: brightness(1.15); }
+    #order-popup .op-submit.buy-btn { background: var(--bull); }
+    #order-popup .op-submit.sell-btn { background: var(--bear); }
+    .op-pct-btns { float: right; }
+    .op-pct-btns button {
+      background: none; border: 1px solid var(--border); color: var(--text3); border-radius: 3px;
+      padding: 0 4px; font-size: 9px; cursor: pointer; margin-left: 2px; transition: all .1s;
+    }
+    .op-pct-btns button:hover { border-color: var(--accent); color: var(--accent); }
+    #order-popup .op-info {
+      display: flex; justify-content: space-between; margin-top: 8px; font-size: 10px; color: var(--text3);
+    }
+
+    /* ── Toast Notifications ─────────────────────────── */
+    #toast-container {
+      position: fixed; bottom: 32px; right: 16px; z-index: 600;
+      display: flex; flex-direction: column-reverse; gap: 6px; pointer-events: none;
+    }
+    .toast {
+      pointer-events: auto;
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px; border-radius: 8px;
+      background: var(--panel); border: 1px solid var(--border);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      font-size: 12px; color: var(--text);
+      animation: toast-in .2s ease-out;
+      min-width: 220px; max-width: 340px;
+    }
+    .toast.toast-out { animation: toast-out .2s ease-in forwards; }
+    .toast .toast-icon { flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+    .toast .toast-icon.success { background: var(--bull); }
+    .toast .toast-icon.error { background: var(--bear); }
+    .toast .toast-icon.info { background: var(--accent); }
+    .toast .toast-icon.warn { background: #FF9800; }
+    .toast .toast-body { flex: 1; }
+    .toast .toast-title { font-weight: 600; font-size: 12px; }
+    .toast .toast-msg { font-size: 11px; color: var(--text2); margin-top: 1px; }
+    @keyframes toast-in { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes toast-out { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(40px); } }
+
+    /* ── Position Panel ──────────────────────────────── */
+    #position-panel {
+      display: none; position: fixed; bottom: 30px; left: 50px; z-index: 400;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4); min-width: 260px; overflow: hidden;
+    }
+    #position-panel .pp-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .3px;
+    }
+    #position-panel .pp-body { padding: 0; }
+    .pp-row {
+      display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+      border-bottom: 1px solid var(--border); font-size: 12px;
+    }
+    .pp-row:last-child { border-bottom: none; }
+    .pp-side { font-weight: 700; font-size: 11px; padding: 2px 6px; border-radius: 3px; }
+    .pp-side.long { background: rgba(14,203,129,0.15); color: var(--bull); }
+    .pp-side.short { background: rgba(246,70,93,0.15); color: var(--bear); }
+    .pp-entry { color: var(--text2); }
+    .pp-qty { color: var(--text2); }
+    .pp-pnl { font-weight: 600; font-family: monospace; }
+    .pp-pnl.profit { color: var(--bull); }
+    .pp-pnl.loss { color: var(--bear); }
+    .pp-close-btn {
+      background: none; border: 1px solid var(--border); border-radius: 4px;
+      color: var(--text3); cursor: pointer; font-size: 10px; padding: 3px 8px; margin-left: auto;
+      transition: all .12s;
+    }
+    .pp-close-btn:hover { border-color: var(--bear); color: var(--bear); }
+
+    /* ── Object List Panel ────────────────────────────── */
+    #objects-panel {
+      display: none; width: 260px; background: var(--panel); border-left: 1px solid var(--border);
+      z-index: 150; overflow-y: auto; flex-shrink: 0;
+    }
+    #objects-panel .obj-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+      font-size: 12px; font-weight: 600; position: sticky; top: 0;
+      background: var(--panel); z-index: 1;
+    }
+    #objects-panel .obj-close {
+      background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px;
+    }
+    .obj-group-head {
+      padding: 6px 12px; font-size: 10px; color: var(--text3);
+      text-transform: uppercase; letter-spacing: .4px; font-weight: 600;
+      border-bottom: 1px solid var(--border); background: var(--bg);
+    }
+    .obj-item {
+      display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+      border-bottom: 1px solid var(--border); font-size: 12px;
+      cursor: default; transition: background .1s;
+    }
+    .obj-item:hover { background: var(--panel-hover); }
+    .obj-item .obj-color {
+      width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+    }
+    .obj-item .obj-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+    .obj-item.hidden .obj-name { color: var(--text3); text-decoration: line-through; }
+    .obj-item .obj-actions { display: flex; gap: 2px; flex-shrink: 0; }
+    .obj-item .obj-btn {
+      width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--text3); cursor: pointer; border-radius: 3px;
+      transition: all .1s;
+    }
+    .obj-item .obj-btn:hover { background: var(--panel-hover); color: var(--text); }
+    .obj-item .obj-btn.active { color: var(--accent); }
+    .obj-item .obj-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .obj-empty {
+      padding: 24px 12px; text-align: center; color: var(--text3); font-size: 12px;
+    }
+
+    /* ── Order History Panel ────────────────────────── */
+    #order-history {
+      display: none; position: fixed; bottom: 30px; right: 16px; z-index: 400;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4); width: 320px; max-height: 300px; overflow: hidden;
+    }
+    #order-history .oh-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .3px;
+    }
+    #order-history .oh-header button {
+      background: none; border: none; color: var(--text3); cursor: pointer; font-size: 14px;
+    }
+    .oh-list { overflow-y: auto; max-height: 260px; }
+    .oh-row {
+      display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+      border-bottom: 1px solid var(--border); font-size: 11px;
+    }
+    .oh-row:last-child { border-bottom: none; }
+    .oh-time { color: var(--text3); font-family: monospace; font-size: 10px; white-space: nowrap; }
+    .oh-type { font-weight: 600; font-size: 10px; padding: 1px 5px; border-radius: 3px; }
+    .oh-type.filled { background: rgba(14,203,129,0.15); color: var(--bull); }
+    .oh-type.placed { background: rgba(41,98,255,0.15); color: var(--accent); }
+    .oh-type.cancelled { background: rgba(132,142,156,0.15); color: var(--text3); }
+    .oh-type.tp { background: rgba(14,203,129,0.15); color: var(--bull); }
+    .oh-type.sl { background: rgba(246,70,93,0.15); color: var(--bear); }
+    .oh-detail { flex: 1; color: var(--text2); }
+    .oh-pnl { font-weight: 600; font-family: monospace; }
+    .oh-pnl.profit { color: var(--bull); }
+    .oh-pnl.loss { color: var(--bear); }
+    .oh-empty { padding: 20px; text-align: center; color: var(--text3); font-size: 11px; }
+
+    /* ── Confirm Dialog ──────────────────────────────── */
+    #confirm-dialog {
+      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+      padding: 20px; width: 300px; z-index: 520;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6); text-align: center;
+    }
+    #confirm-dialog .cd-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    #confirm-dialog .cd-body { font-size: 12px; color: var(--text2); margin-bottom: 16px; }
+    #confirm-dialog .cd-btns { display: flex; gap: 8px; }
+    #confirm-dialog .cd-btns button {
+      flex: 1; padding: 8px; border: none; border-radius: 6px; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: filter .12s;
+    }
+    #confirm-dialog .cd-cancel { background: var(--panel-hover); color: var(--text2); }
+    #confirm-dialog .cd-confirm { color: #fff; }
+    #confirm-dialog .cd-confirm.buy { background: var(--bull); }
+    #confirm-dialog .cd-confirm.sell { background: var(--bear); }
+    #confirm-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 519; }
+
+    /* ── Settings Modal ──────────────────────────────── */
+    .settings-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:500; }
+    .settings-modal {
+      display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      background:var(--panel); border:1px solid var(--border); border-radius:10px;
+      z-index:501; width:520px; max-height:80vh; box-shadow:0 12px 40px rgba(0,0,0,0.6);
+      overflow:hidden; display:none; flex-direction:column;
+    }
+    .settings-header {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 18px; border-bottom:1px solid var(--border);
+    }
+    .settings-header h3 { font-size:15px; font-weight:600; margin:0; }
+    .settings-close { background:none; border:none; color:var(--text3); cursor:pointer; font-size:20px; line-height:1; }
+    .settings-close:hover { color:var(--text); }
+    .settings-body { display:flex; flex:1; min-height:0; }
+    .settings-tabs {
+      width:140px; flex-shrink:0; border-right:1px solid var(--border);
+      padding:8px 0; display:flex; flex-direction:column; gap:1px;
+    }
+    .settings-tab {
+      padding:9px 16px; font-size:12px; color:var(--text2); cursor:pointer;
+      border:none; background:none; text-align:left; border-left:2px solid transparent;
+      transition:all .1s; white-space:nowrap;
+    }
+    .settings-tab:hover { color:var(--text); background:var(--panel-hover); }
+    .settings-tab.active { color:var(--text); border-left-color:var(--accent); background:var(--panel-hover); }
+    .settings-content { flex:1; padding:16px 20px; overflow-y:auto; max-height:420px; }
+    .settings-pane { display:none; }
+    .settings-pane.active { display:block; }
+    .s-section { margin-bottom:16px; }
+    .s-section-title { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; font-weight:600; }
+    .s-row {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:5px 0; min-height:30px;
+    }
+    .s-row label { font-size:12px; color:var(--text2); }
+    .s-row input[type=color] { width:36px; height:22px; border:1px solid var(--border); border-radius:4px; background:none; cursor:pointer; padding:0; }
+    .s-row input[type=number] { width:60px; padding:4px 6px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; font-size:12px; text-align:center; }
+    .s-row select {
+      padding:4px 8px; background:var(--bg); color:var(--text); border:1px solid var(--border);
+      border-radius:4px; font-size:12px; cursor:pointer; min-width:100px;
+    }
+    .s-row input[type=checkbox] {
+      appearance:none; -webkit-appearance:none; width:36px; height:20px;
+      background:var(--border); border-radius:10px; position:relative; cursor:pointer;
+      transition:background .2s;
+    }
+    .s-row input[type=checkbox]::after {
+      content:''; position:absolute; top:2px; left:2px; width:16px; height:16px;
+      background:#fff; border-radius:50%; transition:transform .2s;
+    }
+    .s-row input[type=checkbox]:checked { background:var(--accent); }
+    .s-row input[type=checkbox]:checked::after { transform:translateX(16px); }
+    .s-color-pair { display:flex; gap:8px; align-items:center; }
+    .s-color-pair label { font-size:11px; color:var(--text3); margin-right:2px; }
+    .s-radio-group { display:flex; flex-direction:column; gap:6px; }
+    .s-radio { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text2); cursor:pointer; }
+    .s-radio input[type=radio] { accent-color:var(--accent); cursor:pointer; }
+    .settings-footer {
+      display:flex; align-items:center; justify-content:flex-end; gap:8px;
+      padding:12px 18px; border-top:1px solid var(--border);
+    }
+    .settings-footer button {
+      padding:7px 18px; border-radius:4px; font-size:12px; cursor:pointer; border:none; transition:all .1s;
+    }
+    .s-btn-reset { background:none; color:var(--text3); }
+    .s-btn-reset:hover { color:var(--text); }
+    .s-btn-cancel { background:var(--panel-hover); color:var(--text2); }
+    .s-btn-cancel:hover { background:var(--border); color:var(--text); }
+    .s-btn-ok { background:var(--accent); color:#fff; }
+    .s-btn-ok:hover { filter:brightness(1.1); }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <!-- Symbol Selector (dropdown with search) -->
+    <div class="dropdown" id="symbol-dd">
+      <button class="tb tb-symbol" id="symbol-btn">BTCUSDT</button>
+      <div class="dropdown-menu" style="width:220px;">
+        <div style="padding:6px 10px;"><input id="symbol-search" type="text" placeholder="Search symbol..." style="width:100%; padding:5px 8px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:4px; font-size:12px; outline:none;" /></div>
+        <div id="symbol-list">
+          <div class="dd-item active" data-symbol="BTCUSDT">BTCUSDT <span style="color:var(--text3); font-size:10px;">Bitcoin</span></div>
+          <div class="dd-item" data-symbol="ETHUSDT">ETHUSDT <span style="color:var(--text3); font-size:10px;">Ethereum</span></div>
+          <div class="dd-item" data-symbol="BNBUSDT">BNBUSDT <span style="color:var(--text3); font-size:10px;">BNB</span></div>
+          <div class="dd-item" data-symbol="SOLUSDT">SOLUSDT <span style="color:var(--text3); font-size:10px;">Solana</span></div>
+          <div class="dd-item" data-symbol="XRPUSDT">XRPUSDT <span style="color:var(--text3); font-size:10px;">XRP</span></div>
+          <div class="dd-item" data-symbol="DOGEUSDT">DOGEUSDT <span style="color:var(--text3); font-size:10px;">Doge</span></div>
+          <div class="dd-item" data-symbol="ADAUSDT">ADAUSDT <span style="color:var(--text3); font-size:10px;">Cardano</span></div>
+          <div class="dd-item" data-symbol="AVAXUSDT">AVAXUSDT <span style="color:var(--text3); font-size:10px;">Avalanche</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="tb-sep"></div>
+
+    <!-- Timeframe -->
+    <div class="tb-group">
+      <button class="tb" data-tf="1m">1m</button>
+      <button class="tb" data-tf="5m">5m</button>
+      <button class="tb" data-tf="15m">15m</button>
+      <button class="tb active" data-tf="1H">1H</button>
+      <button class="tb" data-tf="4H">4H</button>
+      <button class="tb" data-tf="1D">1D</button>
+      <button class="tb" data-tf="1W">1W</button>
+    </div>
+    <div class="tb-sep"></div>
+
+    <!-- Chart Type (dropdown — all 12 types) -->
+    <div class="dropdown" id="type-dd">
+      <button class="tb" id="type-btn">Candles <span style="opacity:0.5">&#9662;</span></button>
+      <div class="dropdown-menu" style="min-width:180px;">
+        <div class="dd-item active" data-chart-type="candlestick">Candlestick</div>
+        <div class="dd-item" data-chart-type="hollow_candle">Hollow Candles</div>
+        <div class="dd-item" data-chart-type="heikin_ashi">Heikin Ashi</div>
+        <div class="dd-item" data-chart-type="bar">OHLC Bars</div>
+        <div class="dd-item" data-chart-type="line">Line</div>
+        <div class="dd-item" data-chart-type="line_markers">Line with Markers</div>
+        <div class="dd-item" data-chart-type="step_line">Step Line</div>
+        <div class="dd-item" data-chart-type="area">Area</div>
+        <div class="dd-item" data-chart-type="hlc_area">HLC Area</div>
+        <div class="dd-item" data-chart-type="baseline">Baseline</div>
+        <div class="dd-item" data-chart-type="columns">Columns</div>
+        <div class="dd-item" data-chart-type="high_low">High-Low</div>
+      </div>
+    </div>
+    <div class="tb-sep"></div>
+
+    <!-- Indicators -->
+    <button class="tb accent" id="ind-btn">Indicators <span style="opacity:0.5">&#9662;</span></button>
+    <div class="tb-sep"></div>
+
+    <!-- Compare -->
+    <div class="dropdown" id="cmp-dd">
+      <button class="tb" id="cmp-btn">Compare <span style="opacity:0.5">&#9662;</span></button>
+      <div class="dropdown-menu" style="width:180px;">
+        <div class="dd-item" data-compare="ETHUSDT"><span>ETHUSDT</span><span class="check"></span></div>
+        <div class="dd-item" data-compare="BNBUSDT"><span>BNBUSDT</span><span class="check"></span></div>
+        <div class="dd-item" data-compare="SOLUSDT"><span>SOLUSDT</span><span class="check"></span></div>
+        <div class="dd-item" data-compare="XRPUSDT"><span>XRPUSDT</span><span class="check"></span></div>
+        <div class="dd-item" data-compare="DOGEUSDT"><span>DOGEUSDT</span><span class="check"></span></div>
+      </div>
+    </div>
+
+    <!-- Spacer -->
+    <div style="flex:1"></div>
+
+    <!-- Mode Toggle -->
+    <div class="tb-group" style="border:1px solid var(--border); border-radius:4px; overflow:hidden; height:26px; margin:0 4px;">
+      <button class="tb mode-btn active" id="mode-draw" style="padding:0 10px; height:100%; font-size:11px; font-weight:600; border-bottom:none;">Draw</button>
+      <button class="tb mode-btn" id="mode-trade" style="padding:0 10px; height:100%; font-size:11px; font-weight:600; border-bottom:none;">Trade</button>
+    </div>
+
+    <div class="tb-sep"></div>
+
+    <!-- Right icon group -->
+    <button class="tb" id="history-toggle" title="Order history"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+    <button class="tb" id="objects-toggle" title="Object list"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1" fill="currentColor" stroke="none"/></svg></button>
+    <button class="tb active" id="magnet-toggle" title="Magnet mode"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8V4h4M20 8V4h-4M4 8a8 8 0 0016 0"/></svg></button>
+    <button class="tb" id="screenshot-btn" title="Screenshot"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M7 6l1-2h8l1 2"/></svg></button>
+    <button class="tb" id="copy-btn" title="Copy to clipboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button>
+    <button class="tb" id="alert-btn" title="Price alert"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg></button>
+    <button class="tb" id="settings-toggle" title="Settings"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 00-2 2v.18a2 2 0 01-1 1.73l-.43.25a2 2 0 01-2 0l-.15-.08a2 2 0 00-2.73.73l-.22.38a2 2 0 00.73 2.73l.15.1a2 2 0 011 1.72v.51a2 2 0 01-1 1.74l-.15.09a2 2 0 00-.73 2.73l.22.38a2 2 0 002.73.73l.15-.08a2 2 0 012 0l.43.25a2 2 0 011 1.73V20a2 2 0 002 2h.44a2 2 0 002-2v-.18a2 2 0 011-1.73l.43-.25a2 2 0 012 0l.15.08a2 2 0 002.73-.73l.22-.39a2 2 0 00-.73-2.73l-.15-.08a2 2 0 01-1-1.74v-.5a2 2 0 011-1.74l.15-.09a2 2 0 00.73-2.73l-.22-.38a2 2 0 00-2.73-.73l-.15.08a2 2 0 01-2 0l-.43-.25a2 2 0 01-1-1.73V4a2 2 0 00-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <button class="tb" id="theme-toggle" title="Theme"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg></button>
+    <button class="tb" id="fullscreen-btn" title="Fullscreen"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg></button>
+    <button class="tb" id="demo-trade-btn" style="color:var(--bull); font-size:10px;" title="Demo position">Demo</button>
+  </div>
+
+  <div id="main">
+    <div id="draw-bar">
+      <!-- Always visible -->
+      <button class="db active" data-tool="cursor" title="Select"><svg viewBox="0 0 24 24"><path d="M4 4l7 17 2.5-6.5L20 12z"/></svg></button>
+
+      <div class="db-sep"></div>
+
+      <!-- ── LINES ──────────────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="trend-line" title="Lines"><svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Lines</div>
+          <div class="tool-flyout-item" data-tool="trend-line"><svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4"/></svg>Trend Line</div>
+          <div class="tool-flyout-item" data-tool="ray"><svg viewBox="0 0 24 24"><line x1="4" y1="18" x2="20" y2="6"/><circle cx="4" cy="18" r="1.5"/></svg>Ray</div>
+          <div class="tool-flyout-item" data-tool="info-line"><svg viewBox="0 0 24 24"><line x1="4" y1="18" x2="20" y2="6"/><circle cx="12" cy="12" r="2"/></svg>Info Line</div>
+          <div class="tool-flyout-item" data-tool="extended-line"><svg viewBox="0 0 24 24"><line x1="0" y1="18" x2="24" y2="6"/></svg>Extended Line</div>
+          <div class="tool-flyout-item" data-tool="horizontal-line"><svg viewBox="0 0 24 24"><line x1="2" y1="12" x2="22" y2="12"/></svg>Horizontal Line</div>
+          <div class="tool-flyout-item" data-tool="vertical-line"><svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/></svg>Vertical Line</div>
+          <div class="tool-flyout-item" data-tool="cross-line"><svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>Cross Line</div>
+          <div class="tool-flyout-item" data-tool="polyline"><svg viewBox="0 0 24 24"><polyline points="4,18 10,6 16,14 20,4"/></svg>Polyline</div>
+        </div>
+      </div>
+
+      <!-- ── CHANNELS ───────────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="parallel-channel" title="Channels"><svg viewBox="0 0 24 24"><line x1="2" y1="8" x2="22" y2="4"/><line x1="2" y1="18" x2="22" y2="14"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Channels</div>
+          <div class="tool-flyout-item" data-tool="parallel-channel"><svg viewBox="0 0 24 24"><line x1="2" y1="8" x2="22" y2="4"/><line x1="2" y1="18" x2="22" y2="14"/></svg>Parallel Channel</div>
+          <div class="tool-flyout-item" data-tool="regression-channel"><svg viewBox="0 0 24 24"><line x1="2" y1="18" x2="22" y2="6"/><line x1="2" y1="14" x2="22" y2="2" opacity=".4"/><line x1="2" y1="22" x2="22" y2="10" opacity=".4"/></svg>Regression Channel</div>
+        </div>
+      </div>
+
+      <!-- ── PITCHFORKS ─────────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="pitchfork" title="Pitchforks"><svg viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21"/><line x1="4" y1="10" x2="12" y2="3"/><line x1="20" y1="10" x2="12" y2="3"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Pitchforks</div>
+          <div class="tool-flyout-item" data-tool="pitchfork"><svg viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21"/><line x1="4" y1="10" x2="12" y2="3"/><line x1="20" y1="10" x2="12" y2="3"/></svg>Pitchfork</div>
+        </div>
+      </div>
+
+      <div class="db-sep"></div>
+
+      <!-- ── FIBONACCI ──────────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="fib-retracement" title="Fibonacci"><svg viewBox="0 0 24 24"><line x1="3" y1="5" x2="21" y2="5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="3" y1="20" x2="21" y2="20"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Fibonacci</div>
+          <div class="tool-flyout-item" data-tool="fib-retracement"><svg viewBox="0 0 24 24"><line x1="3" y1="5" x2="21" y2="5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="3" y1="20" x2="21" y2="20"/></svg>Fib Retracement</div>
+          <div class="tool-flyout-item" data-tool="fib-extension"><svg viewBox="0 0 24 24"><polyline points="4,18 12,6 9,12 20,4"/></svg>Fib Extension</div>
+          <div class="tool-flyout-item" data-tool="fib-channel"><svg viewBox="0 0 24 24"><line x1="2" y1="18" x2="22" y2="8"/><line x1="2" y1="14" x2="22" y2="4" opacity=".4"/><line x1="2" y1="22" x2="22" y2="12" opacity=".4"/></svg>Fib Channel</div>
+          <div class="tool-flyout-item" data-tool="fib-timezone"><svg viewBox="0 0 24 24"><line x1="4" y1="2" x2="4" y2="22"/><line x1="10" y1="2" x2="10" y2="22" opacity=".6"/><line x1="18" y1="2" x2="18" y2="22" opacity=".3"/></svg>Fib Time Zone</div>
+          <div class="tool-flyout-item" data-tool="fib-speed-fan"><svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4"/><line x1="4" y1="20" x2="20" y2="10" opacity=".5"/><line x1="4" y1="20" x2="12" y2="4" opacity=".5"/></svg>Fib Speed Fan</div>
+          <div class="tool-flyout-item" data-tool="fib-circles"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="7" opacity=".5"/><circle cx="12" cy="12" r="10" opacity=".3"/></svg>Fib Circles</div>
+          <div class="tool-flyout-item" data-tool="fib-spiral"><svg viewBox="0 0 24 24"><path d="M12,12 C12,10 14,8 16,8 C19,8 20,11 20,13 C20,17 16,20 12,20 C7,20 4,16 4,12 C4,6 8,2 14,2" fill="none"/></svg>Fib Spiral</div>
+          <div class="tool-flyout-item" data-tool="fib-arcs"><svg viewBox="0 0 24 24"><path d="M4,20 Q4,10 12,10" fill="none"/><path d="M4,20 Q4,4 20,4" fill="none" opacity=".5"/></svg>Fib Arcs</div>
+          <div class="tool-flyout-item" data-tool="fib-wedge"><svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4"/><line x1="4" y1="20" x2="20" y2="12"/><line x1="10" y1="12" x2="10" y2="8" opacity=".4"/><line x1="16" y1="8" x2="16" y2="4" opacity=".4"/></svg>Fib Wedge</div>
+        </div>
+      </div>
+
+      <!-- ── GANN ───────────────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="gann-box" title="Gann"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="none"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="21" x2="21" y2="3"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Gann</div>
+          <div class="tool-flyout-item" data-tool="gann-box"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="none"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/></svg>Gann Box</div>
+          <div class="tool-flyout-item" data-tool="gann-square"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="none"/><line x1="3" y1="3" x2="21" y2="21"/><line x1="21" y1="3" x2="3" y2="21"/></svg>Gann Square</div>
+          <div class="tool-flyout-item" data-tool="gann-fan"><svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4"/><line x1="4" y1="20" x2="20" y2="12"/><line x1="4" y1="20" x2="20" y2="18"/></svg>Gann Fan</div>
+        </div>
+      </div>
+
+      <div class="db-sep"></div>
+
+      <!-- ── PATTERNS ───────────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="xabcd-pattern" title="Patterns"><svg viewBox="0 0 24 24"><polyline points="2,18 6,4 12,14 16,6 22,16" fill="none"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Patterns</div>
+          <div class="tool-flyout-item" data-tool="xabcd-pattern"><svg viewBox="0 0 24 24"><polyline points="2,18 6,4 12,14 16,6 22,16" fill="none"/></svg>XABCD Pattern</div>
+          <div class="tool-flyout-item" data-tool="abcd-pattern"><svg viewBox="0 0 24 24"><polyline points="4,16 10,6 16,14 22,4" fill="none"/></svg>ABCD Pattern</div>
+          <div class="tool-flyout-item" data-tool="head-shoulders"><svg viewBox="0 0 24 24"><polyline points="2,16 6,8 10,14 12,4 14,14 18,8 22,16" fill="none"/></svg>Head &amp; Shoulders</div>
+          <div class="tool-flyout-item" data-tool="triangle"><svg viewBox="0 0 24 24"><polygon points="12,4 3,20 21,20" fill="none"/></svg>Triangle Pattern</div>
+          <div class="tool-flyout-item" data-tool="three-drives"><svg viewBox="0 0 24 24"><polyline points="2,16 5,8 8,14 11,4 14,14 17,6 22,16" fill="none"/></svg>Three Drives</div>
+        </div>
+      </div>
+
+      <!-- ── ELLIOTT WAVES ──────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="elliott-impulse" title="Elliott Waves"><svg viewBox="0 0 24 24"><polyline points="2,20 5,12 8,16 12,4 16,14 18,10 22,18" fill="none"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Elliott Waves</div>
+          <div class="tool-flyout-item" data-tool="elliott-impulse"><svg viewBox="0 0 24 24"><polyline points="2,20 5,12 8,16 12,4 16,14 18,10 22,18" fill="none"/></svg>Impulse (12345)</div>
+          <div class="tool-flyout-item" data-tool="elliott-correction"><svg viewBox="0 0 24 24"><polyline points="4,8 10,18 16,10 22,16" fill="none"/></svg>Correction (ABC)</div>
+          <div class="tool-flyout-item" data-tool="elliott-triangle"><svg viewBox="0 0 24 24"><polyline points="2,12 6,6 10,14 14,8 18,12 22,10" fill="none"/></svg>Triangle (ABCDE)</div>
+        </div>
+      </div>
+
+      <!-- ── CYCLES ─────────────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="cyclic-lines" title="Cycles"><svg viewBox="0 0 24 24"><line x1="4" y1="2" x2="4" y2="22"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="20" y1="2" x2="20" y2="22"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Cycles</div>
+          <div class="tool-flyout-item" data-tool="cyclic-lines"><svg viewBox="0 0 24 24"><line x1="4" y1="2" x2="4" y2="22"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="20" y1="2" x2="20" y2="22"/></svg>Cyclic Lines</div>
+          <div class="tool-flyout-item" data-tool="sine-line"><svg viewBox="0 0 24 24"><path d="M2,12 C5,4 9,4 12,12 C15,20 19,20 22,12" fill="none"/></svg>Sine Line</div>
+        </div>
+      </div>
+
+      <div class="db-sep"></div>
+
+      <!-- ── SHAPES ─────────────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="rectangle" title="Shapes"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Shapes</div>
+          <div class="tool-flyout-item" data-tool="rectangle"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg>Rectangle</div>
+          <div class="tool-flyout-item" data-tool="ellipse"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="9" ry="6"/></svg>Ellipse</div>
+          <div class="tool-flyout-item" data-tool="arc"><svg viewBox="0 0 24 24"><path d="M4,18 Q12,2 20,18" fill="none"/></svg>Arc</div>
+          <div class="tool-flyout-item" data-tool="arrow"><svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4"/><polyline points="14,4 20,4 20,10"/></svg>Arrow</div>
+          <div class="tool-flyout-item" data-tool="brush"><svg viewBox="0 0 24 24"><path d="M4,18 C7,12 10,15 14,9 C16,6 18,8 20,5"/></svg>Brush</div>
+        </div>
+      </div>
+
+      <!-- ── TEXT & NOTES ───────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="text" title="Text"><svg viewBox="0 0 24 24"><text x="7" y="17" font-size="14" fill="currentColor" stroke="none" font-weight="bold">T</text></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Text &amp; Notes</div>
+          <div class="tool-flyout-item" data-tool="text"><svg viewBox="0 0 24 24"><text x="7" y="17" font-size="14" fill="currentColor" stroke="none" font-weight="bold">T</text></svg>Text</div>
+          <div class="tool-flyout-item" data-tool="callout"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="12" rx="3"/><polygon points="10,15 12,19 14,15"/></svg>Callout</div>
+          <div class="tool-flyout-item" data-tool="note"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>Note</div>
+          <div class="tool-flyout-item" data-tool="flag-marker"><svg viewBox="0 0 24 24"><line x1="6" y1="4" x2="6" y2="20"/><polygon points="6,4 18,8 6,12" fill="currentColor" stroke="none"/></svg>Flag</div>
+        </div>
+      </div>
+
+      <div class="db-sep"></div>
+
+      <!-- ── PROJECTION ─────────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn" data-tool="long-short" title="Projection"><svg viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21"/><polyline points="8,7 12,3 16,7"/><line x1="4" y1="12" x2="20" y2="12"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Projection</div>
+          <div class="tool-flyout-item" data-tool="long-short"><svg viewBox="0 0 24 24"><line x1="12" y1="3" x2="12" y2="21"/><polyline points="8,7 12,3 16,7"/><line x1="4" y1="12" x2="20" y2="12"/></svg>Long / Short</div>
+          <div class="tool-flyout-item" data-tool="forecast"><svg viewBox="0 0 24 24"><polyline points="2,16 8,10 14,14 22,6" fill="none"/><line x1="14" y1="14" x2="22" y2="14" stroke-dasharray="2,2" opacity=".5"/></svg>Forecast</div>
+        </div>
+      </div>
+
+      <!-- ── MEASURER ───────────────────────────────────── -->
+      <div class="tool-group">
+        <button class="tool-group-btn mode-keep" data-tool="price-range" title="Measure"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="4" x2="6" y2="8"/><line x1="18" y1="16" x2="18" y2="20"/></svg></button>
+        <div class="tool-flyout">
+          <div class="tool-flyout-head">Measurer</div>
+          <div class="tool-flyout-item" data-tool="price-range"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="4" x2="6" y2="8"/><line x1="18" y1="16" x2="18" y2="20"/></svg>Price Range</div>
+          <div class="tool-flyout-item" data-tool="date-range"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="6"/><line x1="4" y1="6" x2="8" y2="6"/><line x1="16" y1="6" x2="20" y2="6"/><line x1="6" y1="4" x2="6" y2="8"/><line x1="18" y1="4" x2="18" y2="8"/></svg>Date Range</div>
+        </div>
+      </div>
+
+      <div class="db-sep"></div>
+
+      <!-- ── BOTTOM ACTIONS ──── -->
+      <button class="db" id="stay-drawing-btn" title="Stay in Drawing Mode"><svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8z"/><path d="M7 12l3 3 7-7" stroke="currentColor" fill="none" stroke-width="2"/></svg></button>
+      <button class="db" id="lock-all-btn" title="Lock all drawings"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></button>
+      <button class="db" id="hide-all-btn" title="Hide all drawings"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button class="db danger" id="remove-all-btn" title="Remove all drawings"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/></svg></button>
+    </div>
+    <div id="chart"></div>
+    <div id="objects-panel">
+      <div class="obj-header">
+        <span>Objects</span>
+        <button class="obj-close" id="obj-close">&times;</button>
+      </div>
+      <div id="obj-list"></div>
+    </div>
+  </div>
+
+  <!-- Navigation Buttons — centered, above volume bars -->
+  <div id="nav-buttons" style="
+    position:absolute; bottom:60px; left:50%; transform:translateX(-50%); z-index:150;
+    display:flex; gap:2px; background:var(--panel); border:1px solid var(--border);
+    border-radius:6px; padding:2px; box-shadow:0 2px 8px rgba(0,0,0,0.3);
+    opacity:0; transition:opacity 0.2s; pointer-events:none;
+  ">
+    <button class="nav-btn" id="nav-zoom-out" title="Zoom out">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button class="nav-btn" id="nav-zoom-in" title="Zoom in">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <div style="width:1px; height:20px; background:var(--border); margin:0 2px; align-self:center;"></div>
+    <button class="nav-btn" id="nav-left" title="Scroll left">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button class="nav-btn" id="nav-right" title="Scroll right">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg>
+    </button>
+    <div style="width:1px; height:20px; background:var(--border); margin:0 2px; align-self:center;"></div>
+    <button class="nav-btn" id="nav-reset" title="Reset zoom">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.5 9A9 9 0 005.6 5.6L1 10m22 4l-4.6 4.4A9 9 0 013.5 15"/></svg>
+    </button>
+  </div>
+
+  <div id="status">
+    <!-- Period range shortcuts (bottom-left) -->
+    <div class="tb-group" style="gap:0;">
+      <button class="tb status-range" data-range="1D" style="padding:0 5px; font-size:10px;">1D</button>
+      <button class="tb status-range" data-range="5D" style="padding:0 5px; font-size:10px;">5D</button>
+      <button class="tb status-range" data-range="1M" style="padding:0 5px; font-size:10px;">1M</button>
+      <button class="tb status-range" data-range="3M" style="padding:0 5px; font-size:10px;">3M</button>
+      <button class="tb status-range" data-range="6M" style="padding:0 5px; font-size:10px;">6M</button>
+      <button class="tb status-range" data-range="1Y" style="padding:0 5px; font-size:10px;">1Y</button>
+    </div>
+    <div class="tb-sep" style="margin:0 6px;"></div>
+    <span id="status-info" style="color:var(--text3);">BTCUSDT · 1H</span>
+
+    <div style="flex:1"></div>
+
+    <!-- Timezone -->
+    <span id="status-tz" style="color:var(--text3); font-size:10px;"></span>
+    <div class="tb-sep" style="margin:0 6px;"></div>
+
+    <!-- Scale mode buttons (bottom-right) -->
+    <button class="tb status-scale" id="scale-pct" data-scale="percentage" style="padding:0 5px; font-size:10px;" title="Percentage scale">%</button>
+    <button class="tb status-scale" id="scale-log" data-scale="logarithmic" style="padding:0 5px; font-size:10px;" title="Log scale">log</button>
+    <button class="tb status-scale active" id="scale-auto" data-scale="linear" style="padding:0 5px; font-size:10px;" title="Auto scale">auto</button>
+  </div>
+</div>
+
+<!-- Inline Text Editor (overlay on chart) -->
+<textarea id="inline-text-input" style="
+  display:none; position:fixed; z-index:450;
+  font-family:inherit; resize:none; outline:none;
+  min-width:120px; min-height:28px;
+"></textarea>
+
+<!-- Drawing Floating Toolbar -->
+<div id="drawing-toolbar" style="display:none; position:fixed; z-index:400;">
+  <div style="display:flex; align-items:center; gap:2px; background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:4px 6px; box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+    <!-- Drag handle -->
+    <div style="cursor:grab; padding:0 4px; color:var(--text3); display:flex; align-items:center;">
+      <svg width="8" height="14" viewBox="0 0 8 14"><circle cx="2" cy="2" r="1.2" fill="currentColor"/><circle cx="6" cy="2" r="1.2" fill="currentColor"/><circle cx="2" cy="7" r="1.2" fill="currentColor"/><circle cx="6" cy="7" r="1.2" fill="currentColor"/><circle cx="2" cy="12" r="1.2" fill="currentColor"/><circle cx="6" cy="12" r="1.2" fill="currentColor"/></svg>
+    </div>
+    <div style="width:1px; height:20px; background:var(--border); margin:0 2px;"></div>
+
+    <!-- Color picker -->
+    <label style="position:relative; cursor:pointer; display:flex; flex-direction:column; align-items:center; padding:4px 6px; border-radius:4px;" class="dtb-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <div id="dtb-color-bar" style="width:16px; height:3px; border-radius:1px; margin-top:1px; background:#2962FF;"></div>
+      <input type="color" id="dtb-color" style="position:absolute; opacity:0; width:0; height:0;" value="#2962FF" />
+    </label>
+
+    <!-- Line width -->
+    <div class="dropdown" id="dtb-width-dd" style="position:relative;">
+      <button class="dtb-btn" style="display:flex; align-items:center; gap:4px; padding:4px 8px; background:none; border:none; color:var(--text); cursor:pointer; border-radius:4px; font-size:12px;">
+        <svg width="16" height="2" viewBox="0 0 16 2"><line x1="0" y1="1" x2="16" y2="1" stroke="currentColor" stroke-width="2"/></svg>
+        <span id="dtb-width-label">1.5</span>
+      </button>
+      <div class="dropdown-menu" style="bottom:100%; top:auto; left:50%; transform:translateX(-50%); min-width:80px;">
+        <div class="dd-item" data-width="0.5">0.5px</div>
+        <div class="dd-item" data-width="1">1px</div>
+        <div class="dd-item active" data-width="1.5">1.5px</div>
+        <div class="dd-item" data-width="2">2px</div>
+        <div class="dd-item" data-width="3">3px</div>
+        <div class="dd-item" data-width="4">4px</div>
+      </div>
+    </div>
+
+    <!-- Line style -->
+    <div class="dropdown" id="dtb-style-dd" style="position:relative;">
+      <button class="dtb-btn" style="display:flex; align-items:center; padding:4px 6px; background:none; border:none; color:var(--text); cursor:pointer; border-radius:4px;">
+        <svg width="20" height="2" viewBox="0 0 20 2" id="dtb-style-icon"><line x1="0" y1="1" x2="20" y2="1" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+      <div class="dropdown-menu" style="bottom:100%; top:auto; left:50%; transform:translateX(-50%); min-width:100px;">
+        <div class="dd-item" data-style="solid"><svg width="20" height="2" viewBox="0 0 20 2"><line x1="0" y1="1" x2="20" y2="1" stroke="currentColor" stroke-width="1.5"/></svg> Solid</div>
+        <div class="dd-item" data-style="dashed"><svg width="20" height="2" viewBox="0 0 20 2"><line x1="0" y1="1" x2="20" y2="1" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4,3"/></svg> Dashed</div>
+        <div class="dd-item" data-style="dotted"><svg width="20" height="2" viewBox="0 0 20 2"><line x1="0" y1="1" x2="20" y2="1" stroke="currentColor" stroke-width="1.5" stroke-dasharray="1,3"/></svg> Dotted</div>
+      </div>
+    </div>
+
+    <div style="width:1px; height:20px; background:var(--border); margin:0 2px;"></div>
+
+    <!-- Visibility -->
+    <button class="dtb-btn" id="dtb-visible" title="Toggle visibility" style="padding:4px 6px; background:none; border:none; color:var(--text2); cursor:pointer; border-radius:4px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+
+    <!-- Lock -->
+    <button class="dtb-btn" id="dtb-lock" title="Lock" style="padding:4px 6px; background:none; border:none; color:var(--text2); cursor:pointer; border-radius:4px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    </button>
+
+    <!-- Delete -->
+    <button class="dtb-btn" id="dtb-delete" title="Delete" style="padding:4px 6px; background:none; border:none; color:var(--bear); cursor:pointer; border-radius:4px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Indicator Gallery Modal -->
+<div id="ind-modal-bg" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:500;"></div>
+<div id="ind-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:var(--panel); border:1px solid var(--border); border-radius:10px; z-index:501; width:420px; max-height:80vh; box-shadow:0 12px 40px rgba(0,0,0,0.6); overflow:hidden;">
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 16px 10px; border-bottom:1px solid var(--border);">
+    <span class="ind-modal-title" style="font-size:15px; font-weight:600;">Indicators</span>
+    <button id="ind-modal-close" style="background:none; border:none; color:var(--text3); cursor:pointer; font-size:18px; line-height:1;">&times;</button>
+  </div>
+  <div style="padding:8px 16px;">
+    <input id="ind-search" type="text" placeholder="Search indicators..." style="width:100%; padding:8px 10px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px; font-size:13px; outline:none;" />
+  </div>
+  <div id="ind-list" style="overflow-y:auto; max-height:calc(80vh - 120px); padding:4px 8px 12px;"></div>
+</div>
+
+<!-- Settings Modal -->
+<div class="settings-bg" id="settings-bg"></div>
+<div class="settings-modal" id="settings-modal">
+  <div class="settings-header">
+    <h3>Chart Settings</h3>
+    <button class="settings-close" id="settings-close">&times;</button>
+  </div>
+  <div class="settings-body">
+    <div class="settings-tabs">
+      <button class="settings-tab active" data-stab="symbol">Symbol</button>
+      <button class="settings-tab" data-stab="statusline">Status Line</button>
+      <button class="settings-tab" data-stab="scales">Scales &amp; Lines</button>
+      <button class="settings-tab" data-stab="canvas">Canvas</button>
+      <button class="settings-tab" data-stab="trading">Trading</button>
+    </div>
+    <div class="settings-content">
+      <!-- Tab 1: Symbol (Candle appearance) -->
+      <div class="settings-pane active" id="sp-symbol">
+        <div class="s-section">
+          <div class="s-section-title">Body Color</div>
+          <div class="s-row">
+            <label>Bull / Bear</label>
+            <div class="s-color-pair">
+              <input type="color" id="s-bull-body" value="#0ecb81" title="Bull body">
+              <input type="color" id="s-bear-body" value="#f6465d" title="Bear body">
+            </div>
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-section-title">Border Color</div>
+          <div class="s-row">
+            <label>Bull / Bear</label>
+            <div class="s-color-pair">
+              <input type="color" id="s-bull-border" value="#0ecb81" title="Bull border">
+              <input type="color" id="s-bear-border" value="#f6465d" title="Bear border">
+            </div>
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-section-title">Wick Color</div>
+          <div class="s-row">
+            <label>Bull / Bear</label>
+            <div class="s-color-pair">
+              <input type="color" id="s-bull-wick" value="#0ecb81" title="Bull wick">
+              <input type="color" id="s-bear-wick" value="#f6465d" title="Bear wick">
+            </div>
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-section-title">Precision</div>
+          <div class="s-row">
+            <label>Decimal places</label>
+            <select id="s-precision">
+              <option value="auto">Auto</option>
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="8">8</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Status Line -->
+      <div class="settings-pane" id="sp-statusline">
+        <div class="s-section">
+          <div class="s-section-title">Legend</div>
+          <div class="s-row">
+            <label>Show OHLCV legend</label>
+            <input type="checkbox" id="s-ohlcv-legend" checked>
+          </div>
+          <div class="s-row">
+            <label>Show indicator values</label>
+            <input type="checkbox" id="s-ind-values" checked>
+          </div>
+          <div class="s-row">
+            <label>Show volume</label>
+            <input type="checkbox" id="s-show-volume" checked>
+          </div>
+          <div class="s-row">
+            <label>Show bar change %</label>
+            <input type="checkbox" id="s-bar-change" checked>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: Scales & Lines -->
+      <div class="settings-pane" id="sp-scales">
+        <div class="s-section">
+          <div class="s-section-title">Price Scale</div>
+          <div class="s-radio-group">
+            <label class="s-radio"><input type="radio" name="s-pscale" value="linear" checked> Auto / Linear</label>
+            <label class="s-radio"><input type="radio" name="s-pscale" value="logarithmic"> Logarithmic</label>
+            <label class="s-radio"><input type="radio" name="s-pscale" value="percentage"> Percentage</label>
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-section-title">Features</div>
+          <div class="s-row">
+            <label>Show countdown to bar close</label>
+            <input type="checkbox" id="s-countdown" checked>
+          </div>
+          <div class="s-row">
+            <label>Show 24h high/low</label>
+            <input type="checkbox" id="s-highlow">
+          </div>
+          <div class="s-row">
+            <label>Show current price line</label>
+            <input type="checkbox" id="s-priceline" checked>
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-section-title">Grid Lines</div>
+          <div class="s-row">
+            <label>Vertical</label>
+            <input type="checkbox" id="s-grid-vert" checked>
+          </div>
+          <div class="s-row">
+            <label>Horizontal</label>
+            <input type="checkbox" id="s-grid-horiz" checked>
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-row">
+            <label>Session breaks</label>
+            <input type="checkbox" id="s-session-breaks">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Canvas -->
+      <div class="settings-pane" id="sp-canvas">
+        <div class="s-section">
+          <div class="s-section-title">Accessibility</div>
+          <div class="s-row">
+            <label>Color scheme</label>
+            <select id="s-color-scheme">
+              <option value="default">Default (Green / Red)</option>
+              <option value="colorblind">Colorblind-safe (Blue / Orange)</option>
+            </select>
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-section-title">Colors</div>
+          <div class="s-row">
+            <label>Background</label>
+            <input type="color" id="s-bg" value="#0b0e11">
+          </div>
+          <div class="s-row">
+            <label>Grid color</label>
+            <input type="color" id="s-grid-color" value="#1a1d23">
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-section-title">Crosshair</div>
+          <div class="s-row">
+            <label>Style</label>
+            <select id="s-crosshair-style">
+              <option value="cross">Cross</option>
+              <option value="line">Horizontal line</option>
+              <option value="dot">Dot</option>
+            </select>
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-section-title">Display</div>
+          <div class="s-row">
+            <label>Show watermark</label>
+            <input type="checkbox" id="s-watermark" checked>
+          </div>
+          <div class="s-row">
+            <label>Text size</label>
+            <select id="s-text-size">
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12" selected>12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+            </select>
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-section-title">Margins</div>
+          <div class="s-row">
+            <label>Top (%)</label>
+            <input type="number" id="s-margin-top" value="10" min="0" max="50">
+          </div>
+          <div class="s-row">
+            <label>Bottom (%)</label>
+            <input type="number" id="s-margin-bot" value="10" min="0" max="50">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 5: Trading -->
+      <div class="settings-pane" id="sp-trading">
+        <div class="s-section">
+          <div class="s-section-title">Trade UI</div>
+          <div class="s-row">
+            <label>Show "+" button on price axis</label>
+            <input type="checkbox" id="s-trade-plus" checked>
+          </div>
+          <div class="s-row">
+            <label>Show trade context menu</label>
+            <input type="checkbox" id="s-trade-ctx" checked>
+          </div>
+          <div class="s-row">
+            <label>Draggable order lines</label>
+            <input type="checkbox" id="s-trade-drag" checked>
+          </div>
+        </div>
+        <div class="s-section">
+          <div class="s-section-title">Drawing</div>
+          <div class="s-row">
+            <label>Stay in drawing mode</label>
+            <input type="checkbox" id="s-stay-drawing">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="settings-footer">
+    <button class="s-btn-reset" id="s-reset">Reset to defaults</button>
+    <div style="flex:1"></div>
+    <button class="s-btn-cancel" id="s-cancel">Cancel</button>
+    <button class="s-btn-ok" id="s-ok">OK</button>
+  </div>
+</div>
+
+<!-- Order Placement Popup -->
+<div id="order-popup">
+  <div class="op-header">
+    <h4 id="op-title">Place Order</h4>
+    <button class="op-close" id="op-close">&times;</button>
+  </div>
+  <div class="op-sides">
+    <button class="op-side buy active" data-side="buy">BUY</button>
+    <button class="op-side sell" data-side="sell">SELL</button>
+  </div>
+  <div class="op-types">
+    <button class="op-type active" data-otype="limit">Limit</button>
+    <button class="op-type" data-otype="market">Market</button>
+  </div>
+  <div class="op-field">
+    <label>Price</label>
+    <input type="text" id="op-price" placeholder="0.00" />
+  </div>
+  <div class="op-field">
+    <label>Quantity</label>
+    <input type="text" id="op-qty" value="0.01" placeholder="0.01" />
+  </div>
+  <div class="op-row">
+    <div class="op-field">
+      <label>Take Profit <span class="op-pct-btns" data-target="tp"><button data-pct="1">1%</button><button data-pct="2">2%</button><button data-pct="5">5%</button></span></label>
+      <input type="text" id="op-tp" placeholder="Click % or enter price" />
+    </div>
+    <div class="op-field">
+      <label>Stop Loss <span class="op-pct-btns" data-target="sl"><button data-pct="1">1%</button><button data-pct="2">2%</button><button data-pct="5">5%</button></span></label>
+      <input type="text" id="op-sl" placeholder="Click % or enter price" />
+    </div>
+  </div>
+  <button class="op-submit buy-btn" id="op-submit">Buy Limit</button>
+  <div class="op-info">
+    <span>Balance: <strong id="op-balance">$10,000.00</strong></span>
+    <span id="op-cost"></span>
+  </div>
+  <div id="op-position" style="display:none; margin-top:8px; padding:8px; background:var(--bg); border-radius:6px; font-size:11px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span id="op-pos-label" style="font-weight:600;"></span>
+      <span id="op-pos-pnl" style="font-family:monospace; font-weight:600;"></span>
+    </div>
+    <div id="op-pos-detail" style="color:var(--text3); margin-top:2px;"></div>
+  </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toast-container"></div>
+
+<!-- Order History -->
+<div id="order-history">
+  <div class="oh-header">
+    <span>Order History</span>
+    <button id="oh-close">&times;</button>
+  </div>
+  <div class="oh-list" id="oh-list"></div>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirm-bg"></div>
+<div id="confirm-dialog">
+  <div class="cd-title" id="cd-title">Confirm Order</div>
+  <div class="cd-body" id="cd-body"></div>
+  <div class="cd-btns">
+    <button class="cd-cancel" id="cd-cancel">Cancel</button>
+    <button class="cd-confirm" id="cd-confirm">Confirm</button>
+  </div>
+</div>
+
+<!-- Position Panel -->
+<div id="position-panel">
+  <div class="pp-header">
+    <span>Positions</span>
+    <span id="pp-total-pnl"></span>
+  </div>
+  <div class="pp-body" id="pp-body"></div>
+</div>
+
+<script type="module" src="./main.ts"></script>
+</body>
+</html>

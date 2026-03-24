@@ -1,0 +1,88 @@
+// ── Public API ─────────────────────────────────────────────────────────────
+// Everything consumers import from '@exchange/charts'
+
+// ── Core Types ─────────────────────────────────────────────────────────────
+export type {
+  Bar,
+  Tick,
+  Point,
+  Timeframe,
+  ChartOptions,
+  ChartType,
+  PriceScaleMode,
+  ChartFeatures,
+  ChartState,
+  ChartStateIndicator,
+  CustomRenderContext,
+  Theme,
+  Datafeed,
+  SymbolInfo,
+  Unsubscribe,
+  Indicator,
+  IndicatorParam,
+  IndicatorOutput,
+  PlotConfig,
+  PlotType,
+  DrawingTool,
+  DrawingOptions,
+  Viewport,
+  ChartEvents,
+} from './api/types';
+
+// ── Chart ──────────────────────────────────────────────────────────────────
+export { Chart } from './core/chart';
+export { MultiChart } from './core/multi-chart';
+export type { MultiChartConfig } from './core/multi-chart';
+export type { LogLevel } from './core/logger';
+export type { ChartLocale } from './core/i18n';
+
+// ── Events ─────────────────────────────────────────────────────────────────
+export type { ChartEventMap } from './core/events';
+
+// ── Themes ─────────────────────────────────────────────────────────────────
+export { darkTheme } from './themes/dark';
+export { lightTheme } from './themes/light';
+export { colorblindDarkTheme } from './themes/colorblind-dark';
+export { colorblindLightTheme } from './themes/colorblind-light';
+
+// ── Indicators (all 21) ────────────────────────────────────────────────────
+// Overlays (render on price chart)
+export { sma } from './indicators/overlays/sma';
+export { ema } from './indicators/overlays/ema';
+export { bollingerBands } from './indicators/overlays/bollinger';
+export { vwap } from './indicators/overlays/vwap';
+export { ichimoku } from './indicators/overlays/ichimoku';
+export { supertrend } from './indicators/overlays/supertrend';
+export { sar } from './indicators/overlays/sar';
+export { envelope } from './indicators/overlays/envelope';
+export { emaRibbon } from './indicators/overlays/ema-ribbon';
+export { twap } from './indicators/overlays/twap';
+export { smc } from './indicators/overlays/smc';
+
+// Oscillators (render in separate panes)
+export { rsi } from './indicators/oscillators/rsi';
+export { macd } from './indicators/oscillators/macd';
+export { stochastic } from './indicators/oscillators/stochastic';
+export { atr } from './indicators/oscillators/atr';
+export { obv } from './indicators/oscillators/obv';
+export { adx } from './indicators/oscillators/adx';
+export { mfi } from './indicators/oscillators/mfi';
+export { williamsR } from './indicators/oscillators/williams-r';
+export { roc } from './indicators/oscillators/roc';
+export { cvd } from './indicators/oscillators/cvd';
+
+// Indicator registry (for custom indicators)
+export { registerIndicator, getIndicator, getAllIndicators } from './indicators/registry';
+
+// ── Renderer ───────────────────────────────────────────────────────────────
+export type { RenderContext } from './core/renderer/render-context';
+export type { RendererBackend } from './core/renderer/canvas-layer';
+
+// ── Trading Types ──────────────────────────────────────────────────────────
+export type { OrderLine, OrderLineSide, OrderLineType } from './core/renderer/order-lines';
+export type { PositionOverlayData } from './core/renderer/position-overlay';
+export type { TradeOptions, TradeActionData, TradeContextItem } from './api/types';
+
+// ── SMC Types ──────────────────────────────────────────────────────────────
+export type { SMCData, SwingPoint, OrderBlock, FairValueGap, BOSEvent, StructureType } from './indicators/overlays/smc';
+export { getLastSMCData } from './indicators/overlays/smc';

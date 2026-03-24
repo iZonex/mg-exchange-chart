@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Exchange Charts — Multi-Chart</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0b0e11; font-family: sans-serif; color: #eaecef; }
+    #app { display: flex; flex-direction: column; width: 100vw; height: 100vh; }
+    #topbar { display: flex; align-items: center; padding: 6px 12px; background: #1e2329; border-bottom: 1px solid rgba(255,255,255,0.06); gap: 8px; font-size: 12px; }
+    #topbar button { background: none; border: 1px solid rgba(255,255,255,0.1); color: #b7bdc6; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    #topbar button:hover { background: rgba(255,255,255,0.06); color: #eaecef; }
+    #topbar button.active { background: #2962FF; color: #fff; border-color: #2962FF; }
+    #grid { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="topbar">
+      <span style="font-weight:600;">Multi-Chart Monitor</span>
+      <span style="color:#5e6673;">|</span>
+      <button class="active" data-layout="2x2">2x2</button>
+      <button data-layout="1x2">1x2</button>
+      <button data-layout="2x1">2x1</button>
+      <button data-layout="1x3">1x3</button>
+      <button data-layout="3x1">3x1</button>
+    </div>
+    <div id="grid"></div>
+  </div>
+  <script type="module" src="./multi.ts"></script>
+</body>
+</html>
