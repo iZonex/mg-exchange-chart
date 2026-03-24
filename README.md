@@ -1,4 +1,4 @@
-# @exchange/charts
+# @mg-exchange/charts
 
 Professional financial charting library for cryptocurrency exchanges.
 
@@ -74,14 +74,14 @@ Drawing tools show real calculations: angle, bars, price change, %, channel widt
 ## Install
 
 ```bash
-npm install @exchange/charts
+npm install @mg-exchange/charts
 ```
 
 ## Quick Start
 
 ```typescript
-import { Chart } from '@exchange/charts';
-import { sma, rsi, bollingerBands } from '@exchange/charts';
+import { Chart } from '@mg-exchange/charts';
+import { sma, rsi, bollingerBands } from '@mg-exchange/charts';
 
 const chart = new Chart({
   container: '#chart',
@@ -109,7 +109,7 @@ chart.on('barUpdate', (bar) => { /* real-time update */ });
 Implement 3 methods to connect any data source:
 
 ```typescript
-import type { Datafeed } from '@exchange/charts';
+import type { Datafeed } from '@mg-exchange/charts';
 
 const myDatafeed: Datafeed = {
   async getBars({ symbol, timeframe, from, to, limit }) {
@@ -141,7 +141,7 @@ The chart provides primitives for exchanges to build their own trading UI. The c
 ### Basic: Order Lines + Position Overlays
 
 ```typescript
-import type { OrderLine, PositionOverlayData } from '@exchange/charts';
+import type { OrderLine, PositionOverlayData } from '@mg-exchange/charts';
 
 // Show a limit order on chart
 chart.addOrderLine({
@@ -245,7 +245,7 @@ chart.on('click', ({ price, time }) => {
 ## React Wrapper
 
 ```tsx
-import { ChartContainer, useChart } from '@exchange/charts/react';
+import { ChartContainer, useChart } from '@mg-exchange/charts/react';
 
 function TradingChart() {
   const chartRef = useChart();
@@ -268,7 +268,7 @@ function TradingChart() {
 ## Multi-Chart Layout
 
 ```typescript
-import { MultiChart } from '@exchange/charts';
+import { MultiChart } from '@mg-exchange/charts';
 
 const multi = new MultiChart({
   container: '#charts',
@@ -390,7 +390,7 @@ chart.off(event, cb);
 ## Theming
 
 ```typescript
-import type { Theme } from '@exchange/charts';
+import type { Theme } from '@mg-exchange/charts';
 
 const customTheme: Theme = {
   name: 'midnight',
@@ -413,8 +413,8 @@ chart.setTheme(customTheme);
 ## Custom Indicators
 
 ```typescript
-import type { Indicator } from '@exchange/charts';
-import { registerIndicator } from '@exchange/charts';
+import type { Indicator } from '@mg-exchange/charts';
+import { registerIndicator } from '@mg-exchange/charts';
 
 const myIndicator: Indicator = {
   name: 'My VWMA',

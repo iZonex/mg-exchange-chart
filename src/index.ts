@@ -1,5 +1,5 @@
 // ── Public API ─────────────────────────────────────────────────────────────
-// Everything consumers import from '@exchange/charts'
+// Everything consumers import from '@mg-exchange/charts'
 
 // ── Core Types ─────────────────────────────────────────────────────────────
 export type {

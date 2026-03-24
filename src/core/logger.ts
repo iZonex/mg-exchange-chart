@@ -7,7 +7,7 @@
 //   logger.debug('Loaded 500 bars');  // only shows when debug enabled
 //
 // Consumer controls logging:
-//   import { Chart } from '@exchange/charts';
+//   import { Chart } from '@mg-exchange/charts';
 //   Chart.setLogLevel('debug');   // show everything
 //   Chart.setLogLevel('warn');    // only warnings + errors (default)
 //   Chart.setLogLevel('error');   // only errors

@@ -1,4 +1,4 @@
-# Contributing to @exchange/charts
+# Contributing to @mg-exchange/charts
 
 Thank you for your interest in contributing! This guide will help you get started.
 

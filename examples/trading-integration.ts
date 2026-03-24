@@ -9,12 +9,12 @@
 //
 // The chart is a visualization layer — your exchange backend handles all order logic.
 
-import { Chart } from '@exchange/charts';
+import { Chart } from '@mg-exchange/charts';
 import type {
   OrderLine,
   PositionOverlayData,
   TradeActionData,
-} from '@exchange/charts';
+} from '@mg-exchange/charts';
 
 // ── 1. Create chart with trade mode ─────────────────────────────────────────
 
@@ -178,7 +178,7 @@ chart.setTradeMode(true, {
 
 // ── Type stubs (your exchange types) ────────────────────────────────────────
 
-declare const myDatafeed: import('@exchange/charts').Datafeed;
+declare const myDatafeed: import('@mg-exchange/charts').Datafeed;
 declare const defaultQty: number;
 declare const exchangeAPI: {
   placeOrder(params: { side: string; price: number; type: string; qty: number }): void;
@@ -207,4 +207,4 @@ interface ExchangePosition {
 
 declare function showExchangeOrderForm(params: { price: number; side: string; x: number; y: number }): void;
 declare function showOCODialog(price: number): void;
-declare function mapOrderType(type: string): import('@exchange/charts').OrderLineType;
+declare function mapOrderType(type: string): import('@mg-exchange/charts').OrderLineType;

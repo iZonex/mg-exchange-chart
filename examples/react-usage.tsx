@@ -1,6 +1,6 @@
 // ── React Usage Example ──────────────────────────────────────────────────────
 //
-// This example shows how to use @exchange/charts with React, including:
+// This example shows how to use @mg-exchange/charts with React, including:
 //   - Basic chart setup with ChartContainer
 //   - Adding/removing indicators
 //   - Handling chart events (crosshair, click, range change)

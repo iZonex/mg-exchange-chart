@@ -1,7 +1,7 @@
 // ── Custom Datafeed Example ──────────────────────────────────────────────────
 //
 // This example shows how to implement the Datafeed interface to connect
-// @exchange/charts to a REST + WebSocket backend.
+// @mg-exchange/charts to a REST + WebSocket backend.
 //
 // The Datafeed interface has 3 required methods:
 //   1. getBars()       — load historical OHLCV bars
@@ -233,7 +233,7 @@ export class ExchangeDatafeed implements Datafeed {
 
 // ── Usage Example ───────────────────────────────────────────────────────────
 //
-// import { Chart } from '@exchange/charts';
+// import { Chart } from '@mg-exchange/charts';
 // import { ExchangeDatafeed } from './custom-datafeed';
 //
 // const datafeed = new ExchangeDatafeed();

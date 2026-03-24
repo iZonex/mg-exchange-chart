@@ -211,7 +211,7 @@ export const customROC: Indicator = {
 
 // ── Usage Example ───────────────────────────────────────────────────────────
 //
-// import { Chart } from '@exchange/charts';
+// import { Chart } from '@mg-exchange/charts';
 // import { donchianChannel, customROC } from './custom-indicator';
 //
 // const chart = new Chart({ ... });

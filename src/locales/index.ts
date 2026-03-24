@@ -2,7 +2,7 @@
 // Import and pass to Chart.setLocale() to switch language.
 //
 // Usage:
-//   import { ru } from '@exchange/charts/locales';
+//   import { ru } from '@mg-exchange/charts/locales';
 //   Chart.setLocale(ru);
 
 export { en } from './en';

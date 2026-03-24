@@ -1,5 +1,5 @@
 {
-  "name": "@exchange/charts",
+  "name": "@mg-exchange/charts",
   "version": "0.1.0",
   "type": "module",
   "description": "Professional financial charting library for cryptocurrency exchanges. Canvas 2D + WebGL rendering, 21 indicators, 47 drawing tools, Smart Money Concepts, real-time streaming.",
@@ -49,15 +49,11 @@
     "technical-analysis",
     "webgl",
     "canvas",
-    "trading",
     "ohlc",
     "volume-profile",
     "smart-money",
     "drawing-tools"
   ],
-  "engines": {
-    "node": ">=20.0.0"
-  },
   "author": "Exchange Charts Contributors",
   "homepage": "https://github.com/iZonex/mg-exchange-chart",
   "repository": {
@@ -92,7 +88,7 @@
   },
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "sideEffects": false
 }
