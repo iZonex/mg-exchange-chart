@@ -59,13 +59,13 @@
     "node": ">=20.0.0"
   },
   "author": "Exchange Charts Contributors",
-  "homepage": "https://github.com/exchange-charts/exchange-charts",
+  "homepage": "https://github.com/iZonex/mg-exchange-chart",
   "repository": {
     "type": "git",
-    "url": "https://github.com/exchange-charts/exchange-charts.git"
+    "url": "https://github.com/iZonex/mg-exchange-chart.git"
   },
   "bugs": {
-    "url": "https://github.com/exchange-charts/exchange-charts/issues"
+    "url": "https://github.com/iZonex/mg-exchange-chart/issues"
   },
   "peerDependencies": {
     "react": ">=18.0.0",

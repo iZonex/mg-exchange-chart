@@ -4,7 +4,7 @@ import { resolve } from 'path';
 // Build the /dev/ demo app as a static site for GitHub Pages
 export default defineConfig({
   root: resolve(__dirname, 'dev'),
-  base: '/exchange-charts/',
+  base: '/mg-exchange-chart/',
   resolve: {
     alias: {
       '@core': resolve(__dirname, 'src/core'),

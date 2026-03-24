@@ -4,7 +4,7 @@ Professional financial charting library for cryptocurrency exchanges.
 
 **Zero dependencies. Canvas 2D + WebGL. TypeScript. Works with React, Vue, or vanilla JS.**
 
-**[Live Demo](https://your-org.github.io/exchange-charts/)** | [API Reference](#full-api-reference) | [Trading Integration](#trading-api) | [Examples](./examples/)
+**[Live Demo](https://izonex.github.io/mg-exchange-chart/)** | [API Reference](#full-api-reference) | [Trading Integration](#trading-api) | [Examples](./examples/)
 
 ---
 
@@ -446,8 +446,8 @@ chart.addIndicator(myIndicator, { period: 20 });
 ## Development
 
 ```bash
-git clone https://github.com/your-org/exchange-charts.git
-cd exchange-charts
+git clone https://github.com/iZonex/mg-exchange-chart.git
+cd mg-exchange-chart
 npm install
 npm run dev          # Dev server with live Binance data
 npm run build        # Build library (dist/)
