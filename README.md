@@ -4,7 +4,7 @@ Professional financial charting library for cryptocurrency exchanges.
 
 **Zero dependencies. Canvas 2D + WebGL. TypeScript. Works with React, Vue, or vanilla JS.**
 
-**[Live Demo](https://izonex.github.io/mg-exchange-chart/)** | [API Reference](#full-api-reference) | [Trading Integration](#trading-api) | [Examples](./examples/)
+**[Live Demo](https://mg-trading-terminal.github.io/mg-exchange-chart/)** | [API Reference](#full-api-reference) | [Trading Integration](#trading-api) | [Examples](./examples/)
 
 ---
 
